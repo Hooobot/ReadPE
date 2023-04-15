@@ -21,12 +21,12 @@
 
 // Define the DOS Header
 typedef struct {
-   uint16_t Magic;
-   uint16_t BytesLastPage;
-   uint16_t Pages;
-   uint16_t Relocations;
-   uint16_t HeaderSize;
-   uint16_t MinParagraph;
+   uint16_t Magic;               
+   uint16_t BytesLastPage;       
+   uint16_t Pages;               
+   uint16_t Relocations;         
+   uint16_t HeaderSize;          
+   uint16_t MinParagraph;        
    uint16_t MaxParagraph;
    uint16_t SS;
    uint16_t SP;
@@ -35,14 +35,16 @@ typedef struct {
    uint16_t IP;
    uint16_t RelocationTable;
    uint16_t OverlayNum;
-   uint16_t dos_res[4];
+   uint16_t dos_res[4];          // Reserved space...
    uint16_t OEM_ID;
    uint16_t OEM_Info;
-   uint16_t dos_res2[10];
+   uint16_t dos_res2[10];        // More reserved space
    uint32_t PEOffset;
 } IMAGE_DOS_HEADER;
+// @todo see if reserved space should exist or if wrong info from documentation
 
 // Define the COFF Header
+// @todo relook at documentation to make sure proper datatype
 typedef struct {
    uint16_t Machine;
    uint16_t NumberOfSections;
@@ -87,6 +89,7 @@ int readdos(char *filename)
    }
 
    // Print the DOS header information
+   // @todo perhaps better formatting with printf, right align, etc.
    printf("DOS Header\n");
    printf("    Magic number:                    0x%04x (MZ)\n", doshdr.Magic);
    printf("    Bytes in last page:              %d\n", doshdr.BytesLastPage);
@@ -121,7 +124,7 @@ int readdos(char *filename)
 int readcoff (char* filename) {
 
    FILE* fp;
-   COFF_Header cofhdr;
+   COFF_Header coffhdr;
 
    // Opens a new file pointer for the COFF header
    fp = fopen(filename, "rb");
@@ -140,18 +143,19 @@ int readcoff (char* filename) {
    }
    // Continues off PE Offset for start of COFF header
    fseek(fp, PEOffset + 4, SEEK_SET);
-   if (fread(&cofhdr, sizeof(cofhdr), 1, fp) != 1) {
+   if (fread(&coffhdr, sizeof(coffhdr), 1, fp) != 1) {
       perror("Error reading COFF header");
       return 1;
    }
 
 
    // Prints the COFF header information 
+   // @todo perhaps better formatting with printf, right align, etc.
    printf("COFF/File header\n");
-   printf("    Machine:                         0x%04x ", cofhdr.Machine);
+   printf("    Machine:                         0x%04x ", coffhdr.Machine);
 
    // Uses a switch to accompany future development of known machines
-   switch (cofhdr.Machine) {
+   switch (coffhdr.Machine) {
       // 0x14c has value of IMAGE_FILE_MACHINE_I386
       case 0x14c:
          printf("IMAGE_FILE_MACHINE_I386\n");
@@ -163,31 +167,31 @@ int readcoff (char* filename) {
          printf("Unknown machine\n");
          break;
    }
-   printf("    Number of sections:              %d\n", cofhdr.NumberOfSections);
+   printf("    Number of sections:              %d\n", coffhdr.NumberOfSections);
 
    // Determines timestamp in form of a long as 'readpe' does
    // Also portrays time, but in terms of local time rather than UTC
-   time_t timestamp = cofhdr.TimeDateStamp;
+   time_t timestamp = coffhdr.TimeDateStamp;
    char *time = strtok(ctime(&timestamp), "\n");
    printf("    Date/time stamp:                 %ld (%s)\n", (long) timestamp, time);
 
    // Other COFF info...
-   printf("    Symbol Table offset:             0x%x\n", cofhdr.PointerToSymbolTable);
-   printf("    Number of symbols:               %d\n", cofhdr.NumberOfSymbols);
-   printf("    Size of optional header:         0x%x\n", cofhdr.SizeOfOptionalHeader);
-   printf("    Characteristics:                 0x%x\n", cofhdr.Characteristics);
+   printf("    Symbol Table offset:             0x%x\n", coffhdr.PointerToSymbolTable);
+   printf("    Number of symbols:               %d\n", coffhdr.NumberOfSymbols);
+   printf("    Size of optional header:         0x%x\n", coffhdr.SizeOfOptionalHeader);
+   printf("    Characteristics:                 0x%x\n", coffhdr.Characteristics);
    printf("    Characteristics names\n");
 
    // Determines if the following two Characteristics flag is set
    // @todo More to/can be added 
    // @todo Can be formatted cleaner - switch, flag system, etc.
-   if (cofhdr.Characteristics & 0x0002) {
+   if (coffhdr.Characteristics & 0x0002) {
       printf("                                         IMAGE_FILE_EXECUTABLE_IMAGE\n");
    }
-   if (cofhdr.Characteristics & 0x0020) {
+   if (coffhdr.Characteristics & 0x0020) {
       printf("                                         IMAGE_FILE_LARGE_ADDRESS_AWARE\n");
    }
-   if (cofhdr.Characteristics & 0x0100) {
+   if (coffhdr.Characteristics & 0x0100) {
       printf("                                         IMAGE_FILE_32BIT_MACHINE\n");
    }
 
