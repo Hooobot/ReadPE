@@ -1,0 +1,31 @@
+###############################################################################
+###               University of Hawaii, College of Engineering
+###               Lab 6 - Readpe - SRE - Spring 2023
+###
+### Tells git which files to ignore
+###
+### @see https://git-scm.com/docs/gitignore
+###
+### @file   .gitignore
+### @author Hubert Liang <hubertl@hawaii.edu>
+###############################################################################
+
+# Compiled Object files
+*.o
+*.obj
+
+# Doxgen Output
+generated_docs/
+
+# Ignore a hidden file for MacOS filesystems
+.DS_Store
+
+# Ignore vi swap files and core files
+.*.swp
+core
+
+# Ignore executable files
+*.exe
+*.out
+*.app
+readpe
