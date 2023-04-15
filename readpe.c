@@ -19,7 +19,6 @@
 #include <time.h>       // For time_t, ctime
 
 // Define the DOS Header
-
 typedef struct {
    uint16_t dos_magic_num;
    uint16_t dos_bytes_last_page;
@@ -46,11 +45,13 @@ typedef struct {
 
 int readdos(char *filename)
 {
+   //Stream IO for taking and parsing data
    FILE *fp;
    IMAGE_DOS_HEADER doshdr;
 
    // Open the file for binary reading
    fp = fopen(filename, "rb");
+   // Error if file cannot be opened
    if (fp == NULL) {
       perror("Error opening file");
       return 1;
@@ -58,6 +59,7 @@ int readdos(char *filename)
 
    // Read the DOS header
    if (fread(&doshdr, sizeof(doshdr), 1, fp) != 1) {
+      // Error if file cannot be read
       perror("Error reading DOS header");
       return 1;
    }
@@ -81,22 +83,30 @@ int readdos(char *filename)
    printf("    OEM information:                 %d\n", doshdr.dos_oem_info);
    printf("    PE header offset:                0x%0x\n", doshdr.dos_pe_offset);
 
+   // Move fp to PE header offset
    fseek(fp, doshdr.dos_pe_offset, SEEK_SET);
 
+   // Closed file for cleanliness
    fclose(fp);
+
+   // Return 0 if read properly
    return 0;
 }
 
 
 int main(int argc, char *argv[])
 {
+   // Check for correct number of arguments
    if (argc != 2) {
+      // Otherwise specifies instructions
       printf("Usage: %s <filename>\n", argv[0]);
       return 1;
    }
 
+   // Calls readdos with file given via argument
    readdos(argv[1]);
 
+   // Returns 0 if properly executed, 1 if not
    return 0;
 }
 
