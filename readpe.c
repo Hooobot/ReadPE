@@ -54,8 +54,17 @@ typedef struct {
 } COFF_Header;
 
 
-// Define a function to read and parse the DOS header data
 
+/* @todo
+ * The following functions are for the function of readpe:
+ * readdos and readcoff
+ * This can be much better formatted, organized, and explained
+ * @todo possibly separate header / c files 
+ */
+
+
+///////////////////////////////////////////////////////////////////////////////
+/* Define a function to read and parse the DOS header data */
 int readdos(char *filename)
 {
    //Stream IO for taking and parsing data
@@ -98,16 +107,17 @@ int readdos(char *filename)
 
    // Move fp to PE header offset
    fseek(fp, doshdr.PEOffset, SEEK_SET);
-
    // Closed file for cleanliness
    fclose(fp);
-
    // Return 0 if read properly
    return 0;
-}
+}  /// readdos
 
 
-// Define a function to read the COFF header
+
+
+///////////////////////////////////////////////////////////////////////////////
+/* Define a function to read the COFF header */
 int readcoff (char* filename) {
 
    FILE* fp;
@@ -128,7 +138,6 @@ int readcoff (char* filename) {
       perror("Error reading e_lfanew");
       return 1;
    }
-
    // Continues off PE Offset for start of COFF header
    fseek(fp, PEOffset + 4, SEEK_SET);
    if (fread(&cofhdr, sizeof(cofhdr), 1, fp) != 1) {
@@ -136,7 +145,8 @@ int readcoff (char* filename) {
       return 1;
    }
 
-   // Prints the entire COFF file header
+
+   // Prints the COFF header information 
    printf("COFF/File header\n");
    printf("    Machine:                         0x%04x ", cofhdr.Machine);
 
@@ -183,10 +193,14 @@ int readcoff (char* filename) {
 
    fclose(fp);
    return 0;
-}
+}  /// readcoff
 
-int main(int argc, char *argv[])
-{
+
+
+
+///////////////////////////////////////////////////////////////////////////////
+/* argv used to determine PE file to read */
+int main(int argc, char *argv[]) {
    // Check for correct number of arguments
    if (argc != 2) {
       // Otherwise specifies instructions
@@ -200,5 +214,8 @@ int main(int argc, char *argv[])
 
    // Returns 0 if properly executed, 1 if not
    return 0;
-}
+}  /// main
+
+
+
 
