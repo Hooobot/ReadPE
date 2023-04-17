@@ -29,3 +29,6 @@ core
 *.out
 *.app
 readpe
+
+# Exception
+!testing/*
