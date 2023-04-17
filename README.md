@@ -1,7 +1,7 @@
 Readpe - Read Window Portable Executables
 =========================================
 
-This program is dedicated to imitating the program '[readpe](https://linuxcommandlibrary.com/man/readpe),' specifically the '-H' and '-S' flags.
+This program is dedicated to imitating the program '[readpe](https://linuxcommandlibrary.com/man/readpe),' specifically the '-H'(Header) and '-S'(Section) flags.
 
 Currently there it only supports two different system architectures and three characteristics flags.
 
