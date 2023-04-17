@@ -25,8 +25,8 @@ readpe: readpe.c
 	$(CC) $(CFLAGS) -o $(TARGET) readpe.c
 
 test: readpe
-	./readpe catnap32.exe
-	./readpe catnap64.exe
+	./readpe testing/catnap32.exe
+	./readpe testing/catnap64.exe
 
 clean:
 	rm -f $(TARGET) *.o
