@@ -6,7 +6,7 @@ This program is dedicated to imitating the program '[readpe](https://linuxcomman
 Currently there it only supports two different system architectures and three characteristics flags.
 
 ### Links
-Microsoft Documentation: https://learn.microsoft.com/en-us/windows/win32/debug/pe-format
+Microsoft Documentation: https://learn.microsoft.com/en-us/windows/win32/debug/pe-format  <br>
 Linux 'readpe':          https://linuxcommandlibrary.com/man/readpe
 
 
