@@ -219,6 +219,44 @@ int readcoff (char* filename) {
 ///////////////////////////////////////////////////////////////////////////////
 /*@newtodo Section Header Implementation */
 
+int read_sections(char *filename) {
+   FILE *fp;
+   IMAGE_DOS_HEADER doshdr;
+   COFF_Header coffhdr;
+
+   fp = fopen(filename, "rb");
+   if (fp == NULL) {
+      perror("Error opening file");
+      return 1;
+   }
+
+   // Read the DOS header
+   fread(&doshdr, sizeof(doshdr), 1, fp);
+
+   // Read the COFF header
+   fseek(fp, doshdr.PEOffset + 4, SEEK_SET);
+   fread(&coffhdr, sizeof(coffhdr), 1, fp);
+
+   // Read the sections
+   fseek(fp, doshdr.PEOffset + 4 + sizeof(coffhdr) + coffhdr.SizeOfOptionalHeader, SEEK_SET);
+   IMAGE_SECTION_HEADER sectionhdr;
+
+   printf("Sections\n");
+   fread(&sectionhdr, sizeof(sectionhdr), 1, fp);
+
+   printf("    Section\n");
+   printf("        Name:                            %s\n", sectionhdr.Name);
+   printf("        Virtual Size:                    0x%x (%d bytes)\n", sectionhdr.VirtualSize, sectionhdr.VirtualSize);
+   printf("        Virtual Address:                 0x%x\n", sectionhdr.VirtualAddress);
+   printf("        Size Of Raw Data:                0x%x (%d bytes)\n", sectionhdr.SizeOfRawData, sectionhdr.SizeOfRawData);
+   printf("        Pointer To Raw Data:             0x%x\n", sectionhdr.PointerToRawData);
+   printf("        Number Of Relocations:           %d\n", sectionhdr.NumberOfRelocations);
+   printf("        Characteristics:                 0x%x\n", sectionhdr.Characteristics);
+   printf("        Characteristic Names\n");
+
+   fclose(fp);
+   return 0;
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 /* argv used to determine PE file to read */
@@ -233,6 +271,7 @@ int main(int argc, char *argv[]) {
    // Calls readdos and readcoff with file given via argument
    readdos(argv[1]);
    readcoff(argv[1]);
+   read_sections(argv[1]);
 
    // Returns 0 if properly executed, 1 if not
    return 0;
