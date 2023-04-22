@@ -14,6 +14,18 @@
 /// @author  Hubert Liang <hubertl@hawaii.edu>
 ///////////////////////////////////////////////////////////////////////////////
 
+
+/* 
+ * I will preface this that this code is too long for one file.
+ * Wayyyyyyyyyyyy too long. 
+ * Instead of working on separating the files I was too focused on
+ * functionality and explanations.
+ *
+ * However, this is just one big @todo
+ *
+ */
+
+
 #include <string.h>     // For strtok
 #include <stdio.h>      // For printf, perror, FILE, fopen, fread, fclose
 #include <stdint.h>     // For uint16_t, uint32_t
@@ -35,16 +47,14 @@ typedef struct {
    uint16_t IP;
    uint16_t RelocationTable;
    uint16_t OverlayNum;
-   uint16_t dos_res[4];          // Reserved space...
+   uint16_t Reserved4[4];          // Reserved space...
    uint16_t OEM_ID;
    uint16_t OEM_Info;
-   uint16_t dos_res2[10];        // More reserved space
+   uint16_t Reserved10[10];        // More reserved space
    uint32_t PEOffset;
 } IMAGE_DOS_HEADER;
-// @todo see if reserved space should exist or if wrong info from documentation
 
 // Define the COFF Header
-// @todo relook at documentation to make sure proper datatype
 typedef struct {
    uint16_t Machine;
    uint16_t NumberOfSections;
@@ -105,6 +115,7 @@ int readdos(char *filename)
    // Print the DOS header information
    // @todo perhaps better formatting with printf, right align, etc.
    printf("DOS Header\n");
+   // This... is wrong. @todo to check the MZ and confirm its accruacy
    printf("    Magic number:                    0x%04x (MZ)\n", doshdr.Magic);
    printf("    Bytes in last page:              %d\n", doshdr.BytesLastPage);
    printf("    Pages in file:                   %d\n", doshdr.Pages);
@@ -185,6 +196,7 @@ int readcoff (char* filename) {
 
    // Determines timestamp in form of a long as 'readpe' does
    // Also portrays time, but in terms of local time rather than UTC
+   // There are many ways to do this. I used local since it seemed simplest
    time_t timestamp = coffhdr.TimeDateStamp;
    char *time = strtok(ctime(&timestamp), "\n");
    printf("    Date/time stamp:                 %ld (%s)\n", (long) timestamp, time);
@@ -199,6 +211,7 @@ int readcoff (char* filename) {
    // Determines if the following two Characteristics flag is set
    // @todo More to/can be added 
    // @todo Can be formatted cleaner - switch, flag system, etc.
+   // @todo might be split to a function similar to the section header below
    if (coffhdr.Characteristics & 0x0002) {
       printf("                                         IMAGE_FILE_EXECUTABLE_IMAGE\n");
    }
@@ -217,10 +230,10 @@ int readcoff (char* filename) {
 
 
 ///////////////////////////////////////////////////////////////////////////////
-/*@newtodo Section Header Implementation */
+/* Section Header Implementation */
 
 // Switch statement to include the characteristic flags of a section
-const char* get_characteristic_name(uint32_t flag) {
+const char* sectionCharacteristics(uint32_t flag) {
     switch (flag) {
         case 0x20:
             return "IMAGE_SCN_CNT_CODE";
@@ -265,25 +278,40 @@ int read_sections(char *filename) {
    fread(&coffhdr, sizeof(coffhdr), 1, fp);
 
    // Read the sections
+   // We are moving the file pointer past the PEOffset to find start of section
    fseek(fp, doshdr.PEOffset + 4 + sizeof(coffhdr) + coffhdr.SizeOfOptionalHeader, SEEK_SET);
    IMAGE_SECTION_HEADER sectionhdr;
 
    printf("Sections\n");
+   // We want to loop through all possible sections for this program...
    for (int i = 0; i < coffhdr.NumberOfSections; ++i) {
+      // ...and read each one
       fread(&sectionhdr, sizeof(sectionhdr), 1, fp);
 
+      // Here is how 'readpe' printed it out:
       printf("    Section\n");
-      printf("\tName:                            %s\n", sectionhdr.Name);
-      printf("\tVirtual Size:                    0x%x (%d bytes)\n", sectionhdr.VirtualSize, sectionhdr.VirtualSize);
-      printf("\tVirtual Address:                 0x%x\n", sectionhdr.VirtualAddress);
-      printf("\tSize Of Raw Data:                0x%x (%d bytes)\n", sectionhdr.SizeOfRawData, sectionhdr.SizeOfRawData);
-      printf("\tPointer To Raw Data:             0x%x\n", sectionhdr.PointerToRawData);
-      printf("\tNumber Of Relocations:           %d\n", sectionhdr.NumberOfRelocations);
-      printf("\tCharacteristics:                 0x%x\n", sectionhdr.Characteristics);
+      printf("\tName:                            %s\n", 
+            sectionhdr.Name);
+      printf("\tVirtual Size:                    0x%x (%d bytes)\n", 
+            sectionhdr.VirtualSize, sectionhdr.VirtualSize);
+      printf("\tVirtual Address:                 0x%x\n", 
+            sectionhdr.VirtualAddress);
+      printf("\tSize Of Raw Data:                0x%x (%d bytes)\n", 
+            sectionhdr.SizeOfRawData, sectionhdr.SizeOfRawData);
+      printf("\tPointer To Raw Data:             0x%x\n", 
+            sectionhdr.PointerToRawData);
+      printf("\tNumber Of Relocations:           %d\n", 
+            sectionhdr.NumberOfRelocations);
+      printf("\tCharacteristics:                 0x%x\n", 
+            sectionhdr.Characteristics);
       printf("\tCharacteristic Names\n");
+      
+      // We use a loop with a left shift operation '<<=' to move bit by bit
+      // We want to use bits so we can check it easier with our 'get' function
       for (uint32_t flag = 1; flag; flag <<= 1) {
          if (sectionhdr.Characteristics & flag) {
-            printf("%-47s%s\n", "", get_characteristic_name(flag));
+            // Leave the sorting to the sectionCharacteristics function
+            printf("%-47s%s\n", "", sectionCharacteristics(flag));
          }
       }
    }
