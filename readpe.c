@@ -219,14 +219,23 @@ int readcoff (char* filename) {
 ///////////////////////////////////////////////////////////////////////////////
 /*@newtodo Section Header Implementation */
 
+// Switch statement to include the characteristic flags of a section
 const char* get_characteristic_name(uint32_t flag) {
     switch (flag) {
         case 0x20:
             return "IMAGE_SCN_CNT_CODE";
+        case 0x40:
+            return "IMAGE_SCN_CNT_INITIALIZED_DATA";
+        case 0x80:
+            return "IMAGE_SCN_CNT_UNINITIALIZED_DATA";
         case 0x20000000:
             return "IMAGE_SCN_MEM_EXECUTE";
         case 0x40000000:
             return "IMAGE_SCN_MEM_READ";
+        case 0x80000000:
+            return "IMAGE_SCN_MEM_WRITE";
+        case 0x2000000:
+            return "IMAGE_SCN_MEM_DISCARDABLE";
         // Add other characteristic names as needed
         default:
             return "UNKNOWN";
@@ -235,7 +244,9 @@ const char* get_characteristic_name(uint32_t flag) {
 
 
 
+// ReadPE Sections
 int read_sections(char *filename) {
+   // Initialize file, DOS Header, COFF Header to read
    FILE *fp;
    IMAGE_DOS_HEADER doshdr;
    COFF_Header coffhdr;
@@ -262,17 +273,17 @@ int read_sections(char *filename) {
       fread(&sectionhdr, sizeof(sectionhdr), 1, fp);
 
       printf("    Section\n");
-      printf("        Name:                            %s\n", sectionhdr.Name);
-      printf("        Virtual Size:                    0x%x (%d bytes)\n", sectionhdr.VirtualSize, sectionhdr.VirtualSize);
-      printf("        Virtual Address:                 0x%x\n", sectionhdr.VirtualAddress);
-      printf("        Size Of Raw Data:                0x%x (%d bytes)\n", sectionhdr.SizeOfRawData, sectionhdr.SizeOfRawData);
-      printf("        Pointer To Raw Data:             0x%x\n", sectionhdr.PointerToRawData);
-      printf("        Number Of Relocations:           %d\n", sectionhdr.NumberOfRelocations);
-      printf("        Characteristics:                 0x%x\n", sectionhdr.Characteristics);
-      printf("        Characteristic Names\n");
+      printf("\tName:                            %s\n", sectionhdr.Name);
+      printf("\tVirtual Size:                    0x%x (%d bytes)\n", sectionhdr.VirtualSize, sectionhdr.VirtualSize);
+      printf("\tVirtual Address:                 0x%x\n", sectionhdr.VirtualAddress);
+      printf("\tSize Of Raw Data:                0x%x (%d bytes)\n", sectionhdr.SizeOfRawData, sectionhdr.SizeOfRawData);
+      printf("\tPointer To Raw Data:             0x%x\n", sectionhdr.PointerToRawData);
+      printf("\tNumber Of Relocations:           %d\n", sectionhdr.NumberOfRelocations);
+      printf("\tCharacteristics:                 0x%x\n", sectionhdr.Characteristics);
+      printf("\tCharacteristic Names\n");
       for (uint32_t flag = 1; flag; flag <<= 1) {
          if (sectionhdr.Characteristics & flag) {
-            printf("            %s\n", get_characteristic_name(flag));
+            printf("%-47s%s\n", "", get_characteristic_name(flag));
          }
       }
    }
