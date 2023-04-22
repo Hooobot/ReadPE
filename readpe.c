@@ -56,6 +56,20 @@ typedef struct {
 } COFF_Header;
 
 
+// Define the Section Header
+
+typedef struct {
+   uint8_t Name[8];
+   uint32_t VirtualSize;
+   uint32_t VirtualAddress;
+   uint32_t SizeOfRawData;
+   uint32_t PointerToRawData;
+   uint32_t PointerToRelocations;
+   uint32_t PointerToLinenumbers;
+   uint16_t NumberOfRelocations;
+   uint16_t NumberOfLinenumbers;
+   uint32_t Characteristics;
+} IMAGE_SECTION_HEADER;
 
 /* @todo
  * The following functions are for the function of readpe:
@@ -200,6 +214,10 @@ int readcoff (char* filename) {
 }  /// readcoff
 
 
+
+
+///////////////////////////////////////////////////////////////////////////////
+/*@newtodo Section Header Implementation */
 
 
 ///////////////////////////////////////////////////////////////////////////////
