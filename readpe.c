@@ -307,7 +307,7 @@ int read_sections(char *filename) {
       printf("\tCharacteristic Names\n");
       
       // We use a loop with a left shift operation '<<=' to move bit by bit
-      // We want to use bits so we can check it easier with our 'get' function
+      // We want to use bits so we can check it easier with its characteristics 
       for (uint32_t flag = 1; flag; flag <<= 1) {
          if (sectionhdr.Characteristics & flag) {
             // Leave the sorting to the sectionCharacteristics function
