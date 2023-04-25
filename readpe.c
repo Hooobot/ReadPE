@@ -31,6 +31,13 @@
 #include <stdint.h>     // For uint16_t, uint32_t
 #include <time.h>       // For time_t, ctime
 
+// Define DLL characteristics for the Optional/Image Header
+
+#define IMAGE_DLLCHARACTERISTICS_DYNAMIC_BASE 0x0040
+#define IMAGE_DLLCHARACTERISTICS_NX_COMPAT 0x0100
+#define IMAGE_DLLCHARACTERISTICS_TERMINAL_SERVER_AWARE 0x8000
+
+
 // Define the DOS Header
 typedef struct {
    uint16_t Magic;               
@@ -52,7 +59,7 @@ typedef struct {
    uint16_t OEM_Info;
    uint16_t Reserved10[10];        // More reserved space
    uint32_t PEOffset;
-} IMAGE_DOS_HEADER;
+} DOS_Header;
 
 // Define the COFF Header
 typedef struct {
@@ -69,7 +76,7 @@ typedef struct {
 // Define the Section Header
 
 typedef struct {
-   uint8_t Name[8];
+   uint8_t  Name[8];
    uint32_t VirtualSize;
    uint32_t VirtualAddress;
    uint32_t SizeOfRawData;
@@ -80,6 +87,42 @@ typedef struct {
    uint16_t NumberOfLinenumbers;
    uint32_t Characteristics;
 } IMAGE_SECTION_HEADER;
+
+
+// Define the Optional / Image Header
+
+typedef struct {
+   uint16_t Magic;
+   uint8_t MajorLinkerVersion;
+   uint8_t MinorLinkerVersion;
+   uint32_t SizeOfCode;
+   uint32_t SizeOfInitializedData;
+   uint32_t SizeOfUninitializedData;
+   uint32_t AddressOfEntryPoint;
+   uint32_t BaseOfCode;
+   uint32_t BaseOfData;
+   uint32_t ImageBase;
+   uint32_t SectionAlignment;
+   uint32_t FileAlignment;
+   uint16_t MajorOperatingSystemVersion;
+   uint16_t MinorOperatingSystemVersion;
+   uint16_t MajorImageVersion;
+   uint16_t MinorImageVersion;
+   uint16_t MajorSubsystemVersion;
+   uint16_t MinorSubsystemVersion;
+   uint32_t Win32VersionValue;
+   uint32_t SizeOfImage;
+   uint32_t SizeOfHeaders;
+   uint32_t CheckSum;
+   uint16_t Subsystem;
+   uint16_t DllCharacteristics;
+   uint32_t SizeOfStackReserve;
+   uint32_t SizeOfStackCommit;
+   uint32_t SizeOfHeapReserve;
+   uint32_t SizeOfHeapCommit;
+} Optional_Header;
+
+
 
 /* @todo
  * The following functions are for the function of readpe:
@@ -95,7 +138,7 @@ int readdos(char *filename)
 {
    //Stream IO for taking and parsing data
    FILE *fp;
-   IMAGE_DOS_HEADER doshdr;
+   DOS_Header doshdr;
 
    // Open the file for binary reading
    fp = fopen(filename, "rb");
@@ -230,39 +273,13 @@ int readcoff (char* filename) {
 
 
 ///////////////////////////////////////////////////////////////////////////////
-/* Section Header Implementation */
+/* Define a function to read the Optional/Image Header */
 
-// Switch statement to include the characteristic flags of a section
-const char* sectionCharacteristics(uint32_t flag) {
-    switch (flag) {
-        case 0x20:
-            return "IMAGE_SCN_CNT_CODE";
-        case 0x40:
-            return "IMAGE_SCN_CNT_INITIALIZED_DATA";
-        case 0x80:
-            return "IMAGE_SCN_CNT_UNINITIALIZED_DATA";
-        case 0x20000000:
-            return "IMAGE_SCN_MEM_EXECUTE";
-        case 0x40000000:
-            return "IMAGE_SCN_MEM_READ";
-        case 0x80000000:
-            return "IMAGE_SCN_MEM_WRITE";
-        case 0x2000000:
-            return "IMAGE_SCN_MEM_DISCARDABLE";
-        // Add other characteristic names as needed
-        default:
-            return "UNKNOWN";
-    }
-}
-
-
-
-// ReadPE Sections
-int read_sections(char *filename) {
-   // Initialize file, DOS Header, COFF Header to read
+int read_optional_header(char *filename) {
    FILE *fp;
-   IMAGE_DOS_HEADER doshdr;
+   Optional_Header optionalhdr;
    COFF_Header coffhdr;
+   DOS_Header doshdr;
 
    fp = fopen(filename, "rb");
    if (fp == NULL) {
@@ -271,73 +288,192 @@ int read_sections(char *filename) {
    }
 
    // Read the DOS header
-   fread(&doshdr, sizeof(doshdr), 1, fp);
+   if (fread(&doshdr, sizeof(doshdr), 1, fp) != 1) {
+      perror("Error reading DOS header");
+      return 1;
+   }
 
    // Read the COFF header
    fseek(fp, doshdr.PEOffset + 4, SEEK_SET);
-   fread(&coffhdr, sizeof(coffhdr), 1, fp);
-
-   // Read the sections
-   // We are moving the file pointer past the PEOffset to find start of section
-   fseek(fp, doshdr.PEOffset + 4 + sizeof(coffhdr) + coffhdr.SizeOfOptionalHeader, SEEK_SET);
-   IMAGE_SECTION_HEADER sectionhdr;
-
-   printf("Sections\n");
-   // We want to loop through all possible sections for this program...
-   for (int i = 0; i < coffhdr.NumberOfSections; ++i) {
-      // ...and read each one
-      fread(&sectionhdr, sizeof(sectionhdr), 1, fp);
-
-      // Here is how 'readpe' printed it out:
-      printf("    Section\n");
-      printf("\tName:                            %s\n", 
-            sectionhdr.Name);
-      printf("\tVirtual Size:                    0x%x (%d bytes)\n", 
-            sectionhdr.VirtualSize, sectionhdr.VirtualSize);
-      printf("\tVirtual Address:                 0x%x\n", 
-            sectionhdr.VirtualAddress);
-      printf("\tSize Of Raw Data:                0x%x (%d bytes)\n", 
-            sectionhdr.SizeOfRawData, sectionhdr.SizeOfRawData);
-      printf("\tPointer To Raw Data:             0x%x\n", 
-            sectionhdr.PointerToRawData);
-      printf("\tNumber Of Relocations:           %d\n", 
-            sectionhdr.NumberOfRelocations);
-      printf("\tCharacteristics:                 0x%x\n", 
-            sectionhdr.Characteristics);
-      printf("\tCharacteristic Names\n");
-      
-      // We use a loop with a left shift operation '<<=' to move bit by bit
-      // We want to use bits so we can check it easier with its characteristics 
-      for (uint32_t flag = 1; flag; flag <<= 1) {
-         if (sectionhdr.Characteristics & flag) {
-            // Leave the sorting to the sectionCharacteristics function
-            printf("%-47s%s\n", "", sectionCharacteristics(flag));
-         }
-      }
+   if (fread(&coffhdr, sizeof(coffhdr), 1, fp) != 1) {
+      perror("Error reading COFF header");
+      return 1;
    }
 
+   // Read the optional header
+   if (fread(&optionalhdr, sizeof(optionalhdr), 1, fp) != 1) {
+      perror("Error reading optional header");
+      return 1;
+   }
+
+   // Print the optional header information
+   // Print the optional header information
+   printf("Optional/Image header\n");
+   printf("    Magic number:                    0x%x (PE32)\n", optionalhdr.Magic);
+   printf("    Linker major version:            %d\n", optionalhdr.MajorLinkerVersion);
+   printf("    Linker minor version:            %d\n", optionalhdr.MinorLinkerVersion);
+   printf("    Size of .text section:           0x%x\n", optionalhdr.SizeOfCode);
+   printf("    Size of .data section:           0x%x\n", optionalhdr.SizeOfInitializedData);
+   printf("    Size of .bss section:            0x%x\n", optionalhdr.SizeOfUninitializedData);
+   printf("    Entrypoint:                      0x%x\n", optionalhdr.AddressOfEntryPoint);
+   printf("    Address of .text section:        0x%x\n", optionalhdr.BaseOfCode);
+   printf("    Address of .data section:        0x%x\n", optionalhdr.BaseOfData);
+   printf("    ImageBase:                       0x%x\n", optionalhdr.ImageBase);
+   printf("    Alignment of sections:           0x%x\n", optionalhdr.SectionAlignment);
+   printf("    Alignment factor:                0x%x\n", optionalhdr.FileAlignment);
+   printf("    Major version of required OS:    %d\n", optionalhdr.MajorOperatingSystemVersion);
+   printf("    Minor version of required OS:    %d\n", optionalhdr.MinorOperatingSystemVersion);
+   printf("    Major version of image:          %d\n", optionalhdr.MajorImageVersion);
+   printf("    Minor version of image:          %d\n", optionalhdr.MinorImageVersion);
+   printf("    Major version of subsystem:      %d\n", optionalhdr.MajorSubsystemVersion);
+   printf("    Minor version of subsystem:      %d\n", optionalhdr.MinorSubsystemVersion);
+   printf("    Size of image:                   0x%x\n", optionalhdr.SizeOfImage);
+   printf("    Size of headers:                 0x%x\n", optionalhdr.SizeOfHeaders);
+   printf("    Checksum:                        0x%x\n", optionalhdr.CheckSum);
+   printf("    Subsystem required:              0x%x", optionalhdr.Subsystem);
+
+   if (optionalhdr.Subsystem == 0x3) {
+      printf(" (IMAGE_SUBSYSTEM_WINDOWS_CUI)\n");
+   }
+
+   printf("    DLL characteristics:             0x%x\n", optionalhdr.DllCharacteristics);
+   printf("    DLL characteristics names\n");
+
+   // Print the DLL characteristics names
+   uint16_t dll_characteristics = optionalhdr.DllCharacteristics;
+   if (dll_characteristics & IMAGE_DLLCHARACTERISTICS_DYNAMIC_BASE) {
+      printf("                                         IMAGE_DLLCHARACTERISTICS_DYNAMIC_BASE\n");
+   }
+   if (dll_characteristics & IMAGE_DLLCHARACTERISTICS_NX_COMPAT) {
+      printf("                                         IMAGE_DLLCHARACTERISTICS_NX_COMPAT\n");
+   }
+   if (dll_characteristics & IMAGE_DLLCHARACTERISTICS_TERMINAL_SERVER_AWARE) {
+      printf("                                         IMAGE_DLLCHARACTERISTICS_TERMINAL_SERVER_AWARE\n");
+   }
+
+   printf("    Size of stack to reserve:        0x%x\n", optionalhdr.SizeOfStackReserve);
+   printf("    Size of stack to commit:         0x%x\n", optionalhdr.SizeOfStackCommit);
+   printf("    Size of heap space to reserve:   0x%x\n", optionalhdr.SizeOfHeapReserve);
+   printf("    Size of heap space to commit:    0x%x\n", optionalhdr.SizeOfHeapCommit);
+
+   // Close the file
    fclose(fp);
    return 0;
 }
 
-///////////////////////////////////////////////////////////////////////////////
-/* argv used to determine PE file to read */
-int main(int argc, char *argv[]) {
-   // Check for correct number of arguments
-   if (argc != 2) {
-      // Otherwise specifies instructions
-      printf("Usage: %s <filename>\n", argv[0]);
-      return 1;
+
+
+   ///////////////////////////////////////////////////////////////////////////////
+   /* Section Header Implementation */
+
+   // Switch statement to include the characteristic flags of a section
+   const char* sectionCharacteristics(uint32_t flag) {
+      switch (flag) {
+         case 0x20:
+            return "IMAGE_SCN_CNT_CODE";
+         case 0x40:
+            return "IMAGE_SCN_CNT_INITIALIZED_DATA";
+         case 0x80:
+            return "IMAGE_SCN_CNT_UNINITIALIZED_DATA";
+         case 0x20000000:
+            return "IMAGE_SCN_MEM_EXECUTE";
+         case 0x40000000:
+            return "IMAGE_SCN_MEM_READ";
+         case 0x80000000:
+            return "IMAGE_SCN_MEM_WRITE";
+         case 0x2000000:
+            return "IMAGE_SCN_MEM_DISCARDABLE";
+            // Add other characteristic names as needed
+         default:
+            return "UNKNOWN";
+      }
    }
 
-   // Calls readdos and readcoff with file given via argument
-   readdos(argv[1]);
-   readcoff(argv[1]);
-   read_sections(argv[1]);
 
-   // Returns 0 if properly executed, 1 if not
-   return 0;
-}  /// main
+
+   // ReadPE Sections
+   int read_sections(char *filename) {
+      // Initialize file, DOS Header, COFF Header to read
+      FILE *fp;
+      DOS_Header doshdr;
+      COFF_Header coffhdr;
+
+      fp = fopen(filename, "rb");
+      if (fp == NULL) {
+         perror("Error opening file");
+         return 1;
+      }
+
+      // Read the DOS header
+      fread(&doshdr, sizeof(doshdr), 1, fp);
+
+      // Read the COFF header
+      fseek(fp, doshdr.PEOffset + 4, SEEK_SET);
+      fread(&coffhdr, sizeof(coffhdr), 1, fp);
+
+      // Read the sections
+      // We are moving the file pointer past the PEOffset to find start of section
+      fseek(fp, doshdr.PEOffset + 4 + sizeof(coffhdr) + coffhdr.SizeOfOptionalHeader, SEEK_SET);
+      IMAGE_SECTION_HEADER sectionhdr;
+
+      printf("Sections\n");
+      // We want to loop through all possible sections for this program...
+      for (int i = 0; i < coffhdr.NumberOfSections; ++i) {
+         // ...and read each one
+         fread(&sectionhdr, sizeof(sectionhdr), 1, fp);
+
+         // Here is how 'readpe' printed it out:
+         printf("    Section\n");
+         printf("\tName:                            %s\n", 
+               sectionhdr.Name);
+         printf("\tVirtual Size:                    0x%x (%d bytes)\n", 
+               sectionhdr.VirtualSize, sectionhdr.VirtualSize);
+         printf("\tVirtual Address:                 0x%x\n", 
+               sectionhdr.VirtualAddress);
+         printf("\tSize Of Raw Data:                0x%x (%d bytes)\n", 
+               sectionhdr.SizeOfRawData, sectionhdr.SizeOfRawData);
+         printf("\tPointer To Raw Data:             0x%x\n", 
+               sectionhdr.PointerToRawData);
+         printf("\tNumber Of Relocations:           %d\n", 
+               sectionhdr.NumberOfRelocations);
+         printf("\tCharacteristics:                 0x%x\n", 
+               sectionhdr.Characteristics);
+         printf("\tCharacteristic Names\n");
+
+         // We use a loop with a left shift operation '<<=' to move bit by bit
+         // We want to use bits so we can check it easier with its characteristics 
+         for (uint32_t flag = 1; flag; flag <<= 1) {
+            // Bitwise '&' is used because of bitwise operation instead of logical
+            if (sectionhdr.Characteristics & flag) {
+               // Leave the sorting to the sectionCharacteristics function
+               printf("%-47s%s\n", "", sectionCharacteristics(flag));
+            }
+         }
+      }
+
+      fclose(fp);
+      return 0;
+   }
+
+   ///////////////////////////////////////////////////////////////////////////////
+   /* argv used to determine PE file to read */
+   int main(int argc, char *argv[]) {
+      // Check for correct number of arguments
+      if (argc != 2) {
+         // Otherwise specifies instructions
+         printf("Usage: %s <filename>\n", argv[0]);
+         return 1;
+      }
+
+      // Calls readdos and readcoff with file given via argument
+      readdos(argv[1]);
+      readcoff(argv[1]);
+      read_optional_header(argv[1]);
+      read_sections(argv[1]);
+
+      // Returns 0 if properly executed, 1 if not
+      return 0;
+   }  /// main
 
 
 
