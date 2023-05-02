@@ -18,11 +18,15 @@ all: $(TARGET)
 CC     = gcc
 CFLAGS = -Wall -Wextra $(DEBUG_FLAGS)
 
+# No debug currently implemented
 debug: DEBUG_FLAGS = -g -DDEBUG
 debug: clean $(TARGET)
 
-readpe: readpe.c
-	$(CC) $(CFLAGS) -o $(TARGET) readpe.c
+readpe.o: readpe.c readpe.h
+	$(CC) $(CFLAGS) -c  readpe.c -o readpe.o
+
+readpe: readpe.o
+	$(CC) $(CFLAGS) -o $(TARGET) readpe.o
 
 test: readpe
 	./readpe testing/catnap32.exe
