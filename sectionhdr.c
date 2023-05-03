@@ -14,6 +14,7 @@
 #include <stdio.h>         // For printf, perror, FILE, fopen, fread, fclose
 #include <stdint.h>        // For uint16_t, uint32_t
 #include <string.h>        // For memset
+#include <assert.h>        // For assert                           
 #include "coffhdr.h"       // For COFF_Header struct and function
 #include "doshdr.h"        // For DOS_Header struct and function
 #include "sectionhdr.h"    // For Section_Header struct
@@ -42,6 +43,19 @@ const char* sectionCharacteristics(uint32_t flag) {
    }
 }
 
+
+//Validation for the Section Header data
+void validate_section_header(Section_Header *section_header) {
+    // Check data size is greater than 0
+    assert(section_header->SizeOfRawData > 0);
+
+    // Check that the virtual size is not larger than the size of the raw data
+    assert(section_header->VirtualSize <= section_header->SizeOfRawData);
+
+    // Check that the number of relocations and line numbers are reasonable
+    assert(section_header->NumberOfRelocations < 0xFFFF);
+    assert(section_header->NumberOfLinenumbers < 0xFFFF);
+}
 
 
 /* Section Header Implementation */

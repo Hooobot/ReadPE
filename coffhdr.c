@@ -14,7 +14,22 @@
 #include <stdint.h>     // For uint16_t, uint32_t
 #include <time.h>       // For time_t, ctime
 #include <string.h>     // For memset
+#include <assert.h>     // For assert
 #include "coffhdr.h"    // For COFF_Header struct
+
+// Validation for the COFF_Header data
+void validate_coff_header(COFF_Header *coff_header) {
+    assert(coff_header != NULL);
+
+    // Due to the possibility of multiple machine types,
+    // it would not be specifically verified or limited
+
+    // Additional checks for values in the COFF header
+    assert(coff_header->NumberOfSections > 0);
+    assert(coff_header->TimeDateStamp > 0);
+    assert(coff_header->SizeOfOptionalHeader > 0);
+    assert(coff_header->Characteristics > 0);
+}
 
 
 /* Define a function to read the COFF header */

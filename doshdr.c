@@ -13,7 +13,31 @@
 #include <stdio.h>      // For printf, perror, FILE, fopen, fread, fclose
 #include <stdint.h>     // For uint16_t, uint32_t
 #include <string.h>     // For memset
+#include <assert.h>     // For assert
 #include "doshdr.h"     // For DOS_Header struct
+
+// Validation for the DOS_Header data
+void validate_dos_header(DOS_Header *doshdr) {
+    // Verify the magic number (MZ)
+    assert(doshdr->Magic == 0x5A4D);
+
+    // Additional checks for values in the DOS header
+    assert(doshdr->Pages >= 0);
+    assert(doshdr->Relocations >= 0);
+    assert(doshdr->HeaderSize > 0);
+    assert(doshdr->MinParagraph >= 0);
+    assert(doshdr->MaxParagraph >= 0);
+    assert(doshdr->SS >= 0);
+    assert(doshdr->SP >= 0);
+    assert(doshdr->IP >= 0);
+    assert(doshdr->CS >= 0);
+    assert(doshdr->RelocationTable >= 0);
+    assert(doshdr->OverlayNum >= 0);
+    assert(doshdr->OEM_ID >= 0);
+    assert(doshdr->OEM_Info >= 0);
+    assert(doshdr->PEOffset > 0);
+}
+
 
 /* Define a function to read and parse the DOS header data */
 int readdos(char *filename)
@@ -39,6 +63,9 @@ int readdos(char *filename)
       perror("Error reading DOS header");
       return 1;
    }
+   
+   // Validate the DOS header using the prior function
+   validate_dos_header(&doshdr);
 
    // Print the DOS header information
    // @todo perhaps better formatting with printf, right align, etc.

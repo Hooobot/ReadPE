@@ -13,6 +13,7 @@
 #include <stdio.h>         // For printf, perror, FILE, fopen, fread, fclose
 #include <stdint.h>        // For uint16_t, uint32_t
 #include <string.h>        // For memset
+#include <assert.h>        // For assert
 #include "coffhdr.h"       // For COFF_Header struct and function
 #include "doshdr.h"        // For DOS_Header struct and function
 #include "optionhdr.h"     // For Optional_Header struct
@@ -22,6 +23,34 @@
 #define IMAGE_DLLCHARACTERISTICS_DYNAMIC_BASE 0x0040
 #define IMAGE_DLLCHARACTERISTICS_NX_COMPAT 0x0100
 #define IMAGE_DLLCHARACTERISTICS_TERMINAL_SERVER_AWARE 0x8000
+
+
+// Validation for the Optional_Header data
+void validate_optional_header(Optional_Header *opt_header) {
+    assert(opt_header != NULL);
+
+    // Verify the magic number (0x10b for PE32, 0x20b for PE32+)
+    // 0x10b (PE32)  is for 32-bit executables
+    // 0x20b (PE32+) is for 64-bit executables
+    // If there are multiple... it would throw an error
+    assert(opt_header->Magic == 0x10b || opt_header->Magic == 0x20b);
+
+    // Additional checks for values in the Optional header
+    assert(opt_header->SizeOfCode > 0);
+    assert(opt_header->AddressOfEntryPoint > 0);
+    assert(opt_header->BaseOfCode > 0);
+    assert(opt_header->ImageBase > 0);
+    assert(opt_header->SectionAlignment > 0);
+    assert(opt_header->FileAlignment > 0);
+    assert(opt_header->Win32VersionValue == 0); // This field is reserved and should be 0
+    assert(opt_header->SizeOfImage > 0);
+    assert(opt_header->SizeOfHeaders > 0);
+    assert(opt_header->Subsystem > 0);
+    assert(opt_header->SizeOfStackReserve > 0);
+    assert(opt_header->SizeOfStackCommit > 0);
+    assert(opt_header->SizeOfHeapReserve > 0);
+}
+
 
 /* Define a function to read the Optional/Image Header */
 
