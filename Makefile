@@ -22,9 +22,7 @@ CFLAGS = -Wall -Wextra $(DEBUG_FLAGS)
 debug: DEBUG_FLAGS = -g -DDEBUG
 debug: clean $(TARGET)
 
-readpe: doshdr.o coffhdr.o optionhdr.o readpe.o
-	$(CC) $(CFLAGS) -o $(TARGET) doshdr.o readpe.o coffhdr.o optionhdr.o
-
+# Compiling components of readpe
 doshdr.o: doshdr.c doshdr.h
 	$(CC) $(CFLAGS) -c doshdr.c -o doshdr.o
 
@@ -34,10 +32,16 @@ coffhdr.o: coffhdr.c coffhdr.h
 optionhdr.o: optionhdr.c optionhdr.h
 	$(CC) $(CFLAGS) -c optionhdr.c -o optionhdr.o
 
-readpe.o: readpe.c readpe.h
-	$(CC) $(CFLAGS) -c  readpe.c -o readpe.o 
+sectionhdr.o: sectionhdr.c sectionhdr.h
+	$(CC) $(CFLAGS) -c sectionhdr.c -o sectionhdr.o
 
+readpe.o: readpe.c doshdr.h coffhdr.h optionhdr.h sectionhdr.h
+	$(CC) $(CFLAGS) -c readpe.c -o readpe.o
 
+readpe: readpe.o doshdr.o coffhdr.o optionhdr.o sectionhdr.o
+	$(CC) $(CFLAGS) -o $(TARGET) readpe.o doshdr.o coffhdr.o optionhdr.o sectionhdr.o
+
+# Testing within a directory
 test: readpe
 	./readpe testing/catnap32.exe
 	./readpe testing/catnap64.exe
