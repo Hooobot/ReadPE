@@ -19,8 +19,6 @@ CC     = gcc
 CFLAGS = -Wall -Wextra $(DEBUG_FLAGS)
 
 # No debug currently implemented
-debug: DEBUG_FLAGS = -g -DDEBUG
-debug: clean $(TARGET)
 
 # Compiling components of readpe
 doshdr.o: doshdr.c doshdr.h
