@@ -3,30 +3,18 @@
 //          Lab 6 - Readpe - SRE - Spring 2023
 //
 ///
-/// readpe - Reads Window System portable executable files 
-///          then parses its content to portray separate 
-///          sections of a Window's executable file.
-///          Imitates the Linux Command 'readpe'
+/// readpe - Header for the readpe.h file, defining the structs for
+///          DOS Header, COFF Header, Section Header, and Optional Header
+///          
 ///
 /// @see     https://linuxcommandlibrary.com/man/readpe
 ///
-/// @file    readpe.c
+/// @file    readpe.h
 /// @author  Hubert Liang <hubertl@hawaii.edu>
 ///////////////////////////////////////////////////////////////////////////////
 
 #ifndef readpe_h
 #define readpe_h
-
-#include <string.h>     // For strtok
-#include <stdio.h>      // For printf, perror, FILE, fopen, fread, fclose
-#include <stdint.h>     // For uint16_t, uint32_t
-#include <time.h>       // For time_t, ctime
-
-// Define DLL characteristics for the Optional/Image Header
-
-#define IMAGE_DLLCHARACTERISTICS_DYNAMIC_BASE 0x0040
-#define IMAGE_DLLCHARACTERISTICS_NX_COMPAT 0x0100
-#define IMAGE_DLLCHARACTERISTICS_TERMINAL_SERVER_AWARE 0x8000
 
 
 // Define the DOS Header
@@ -64,22 +52,6 @@ typedef struct {
 } COFF_Header;
 
 
-// Define the Section Header
-
-typedef struct {
-   uint8_t  Name[8];
-   uint32_t VirtualSize;
-   uint32_t VirtualAddress;
-   uint32_t SizeOfRawData;
-   uint32_t PointerToRawData;
-   uint32_t PointerToRelocations;
-   uint32_t PointerToLinenumbers;
-   uint16_t NumberOfRelocations;
-   uint16_t NumberOfLinenumbers;
-   uint32_t Characteristics;
-} IMAGE_SECTION_HEADER;
-
-
 // Define the Optional / Image Header
 
 typedef struct {
@@ -112,6 +84,23 @@ typedef struct {
    uint32_t SizeOfHeapReserve;
    uint32_t SizeOfHeapCommit;
 } Optional_Header;
+
+
+// Define the Section Header
+
+typedef struct {
+   uint8_t  Name[8];
+   uint32_t VirtualSize;
+   uint32_t VirtualAddress;
+   uint32_t SizeOfRawData;
+   uint32_t PointerToRawData;
+   uint32_t PointerToRelocations;
+   uint32_t PointerToLinenumbers;
+   uint16_t NumberOfRelocations;
+   uint16_t NumberOfLinenumbers;
+   uint32_t Characteristics;
+} Section_Header;
+
 
 #endif 
 // End of header
