@@ -22,11 +22,21 @@ CFLAGS = -Wall -Wextra $(DEBUG_FLAGS)
 debug: DEBUG_FLAGS = -g -DDEBUG
 debug: clean $(TARGET)
 
-readpe.o: readpe.c readpe.h
-	$(CC) $(CFLAGS) -c  readpe.c -o readpe.o
+readpe: doshdr.o coffhdr.o optionhdr.o readpe.o
+	$(CC) $(CFLAGS) -o $(TARGET) doshdr.o readpe.o coffhdr.o optionhdr.o
 
-readpe: readpe.o
-	$(CC) $(CFLAGS) -o $(TARGET) readpe.o
+doshdr.o: doshdr.c doshdr.h
+	$(CC) $(CFLAGS) -c doshdr.c -o doshdr.o
+
+coffhdr.o: coffhdr.c coffhdr.h
+	$(CC) $(CFLAGS) -c coffhdr.c -o coffhdr.o
+
+optionhdr.o: optionhdr.c optionhdr.h
+	$(CC) $(CFLAGS) -c optionhdr.c -o optionhdr.o
+
+readpe.o: readpe.c readpe.h
+	$(CC) $(CFLAGS) -c  readpe.c -o readpe.o 
+
 
 test: readpe
 	./readpe testing/catnap32.exe
